@@ -1,7 +1,7 @@
-name: Replay proof Comparator
+name: Odd-rank intertwiner and level space Comparator
 on:
   push:
-    branches: [verify/comparator-35148]
+    branches: [verify/comparator-35173]
 
 permissions:
   contents: read
@@ -50,7 +50,7 @@ jobs:
           test -x "$RUNNER_TEMP/lean/bin/nanoda_bin"
       - name: Check out the exact proof and apply the upstream repair
         run: |
-          candidate=78599320ad7e878bce293c6084fb0aab167b86e1
+          candidate=5a518d889499aecb35418ebd52c678d38bfa0621
           mkdir replay
           git -C replay init -q
           git -C replay remote add origin https://github.com/itsloganmann/alpoge-rh-replay.git
@@ -59,7 +59,7 @@ jobs:
           git -C replay checkout --detach FETCH_HEAD
           test "$(git -C replay rev-parse HEAD)" = "$candidate"
           git -C replay apply --index "$GITHUB_WORKSPACE/upstream-repair.patch"
-          test "$(git -C replay write-tree)" = 1012f1861f3800ab19de1c7c074e067e3eae9350
+          test "$(git -C replay write-tree)" = 51e47ae5c291d183a390e892804b6a3aceb1f730
           git -C replay diff --cached --exit-code -- grh/Challenge.lean grh/src/Statements.lean grh/comparator.json
           git -C replay diff --cached --stat
       - name: Restore the pinned dependency caches
