@@ -1,0 +1,81 @@
+name: Replay proof Comparator
+on:
+  push:
+    branches: [verify/comparator-35148]
+
+permissions:
+  contents: read
+
+jobs:
+  comparator:
+    if: github.repository == 'itsloganmann/alpoge-rh-replay'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: bash
+    env:
+      LEAN_ABORT_ON_PANIC: '1'
+      LEAN_NUM_THREADS: '3'
+      LAKE_ARTIFACT_CACHE: 'false'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install the pinned Linux toolchain
+        run: |
+          available_kb=$(df -Pk "$RUNNER_TEMP" | awk 'NR == 2 {print $4}')
+          if (( available_kb < 28 * 1024 * 1024 )); then
+            sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap zstd
+          if ! bwrap --unshare-all --ro-bind / / --dev /dev --proc /proc /bin/true; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+            bwrap --unshare-all --ro-bind / / --dev /dev --proc /proc /bin/true
+          fi
+          df -h "$RUNNER_TEMP"
+          free -h
+          release=4.37.0-rc1
+          archive="$RUNNER_TEMP/lean.tar.zst"
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://github.com/leanprover/lean4/releases/download/v$release/lean-$release-linux.tar.zst" \
+            --output "$archive"
+          echo "2e1bbb832870bb81b7131cb70b13aec2cc7ed9f22e2bdbb236b86076ae20382d  $archive" | sha256sum --check
+          mkdir "$RUNNER_TEMP/lean"
+          tar --zstd -xf "$archive" -C "$RUNNER_TEMP/lean" --strip-components=1
+          rm -- "$archive"
+          echo "$RUNNER_TEMP/lean/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/lean/bin/lean" --version
+          test -x "$RUNNER_TEMP/lean/bin/nanoda_bin"
+      - name: Check out the exact proof and apply the upstream repair
+        run: |
+          candidate=78599320ad7e878bce293c6084fb0aab167b86e1
+          mkdir replay
+          git -C replay init -q
+          git -C replay remote add origin https://github.com/itsloganmann/alpoge-rh-replay.git
+          git -C replay sparse-checkout set grh
+          git -C replay fetch --depth=1 --filter=blob:none origin "$candidate"
+          git -C replay checkout --detach FETCH_HEAD
+          test "$(git -C replay rev-parse HEAD)" = "$candidate"
+          git -C replay apply --index "$GITHUB_WORKSPACE/upstream-repair.patch"
+          test "$(git -C replay write-tree)" = 1012f1861f3800ab19de1c7c074e067e3eae9350
+          git -C replay diff --cached --exit-code -- grh/Challenge.lean grh/src/Statements.lean grh/comparator.json
+          git -C replay diff --cached --stat
+      - name: Restore the pinned dependency caches
+        working-directory: replay/grh
+        run: |
+          export MATHLIB_CACHE_DIR="$RUNNER_TEMP/mathlib-cache"
+          export LAKE_CACHE_DIR="$RUNNER_TEMP/tauceti-cache"
+          lake exe mathlib/cache get
+          python3 -I scripts/tauceti-cache-get.py
+          rm -rf -- "$MATHLIB_CACHE_DIR" "$LAKE_CACHE_DIR"
+          df -h .
+      - name: Run the stock Comparator
+        working-directory: replay/grh
+        run: time lake comparator --config comparator.json
+      - name: Check the five headline theorems' axioms
+        working-directory: replay/grh
+        run: |
+          lake env lean scripts/PrintAxioms.lean | tee "$RUNNER_TEMP/axioms.log"
+          test "$(awk '/\[propext, Classical.choice, Quot.sound\]$/ {n++} END {print n+0}' "$RUNNER_TEMP/axioms.log")" = 5
