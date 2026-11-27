@@ -365,8 +365,11 @@ lemma exists_period_twist {p : ℕ} [ThePrime p] [hP : CrysPeriodAlgebra] (a : �
   obtain ⟨t, ht⟩ := exists_tensor_twist (ψ := PadicTest.twist σ) (Θ := tilt ⋙ wittFunctor) F h_smul
     ⟨fun c ↦ CommRingCat.ofHom (WittVector.map (iterateFrobenius c.TiltRing p a)),
       fun _ _ _ ↦ ext_apply fun _ ↦ WittVector.ext fun _ ↦ (map_pow ..).symm⟩
-    fun _ _ ↦ WittVector.ext fun _ ↦
-      (congrArg (fun x ↦ x ^ p ^ a) (tiltMap_comp ..)).trans (map_pow ..).symm
+    fun c w ↦ WittVector.ext fun n ↦
+      let g := toRingHom (Gp p) OC σ
+      (congrArg (fun x : c.TiltRing ↦ x ^ p ^ a)
+        (tiltMap_comp (p := p) g c.structureMap (w.coeff n))).trans
+        (map_pow (tiltMap c.structureMap) (tiltMap g (w.coeff n)) (p ^ a)).symm
   let τ :
       PadicTest.twist σ ⋙ (tilt ⋙ periodAlg Amax) ⋙ forget₂ .. ⟶
         (tilt ⋙ periodAlg Amax) ⋙ forget₂ .. :=
