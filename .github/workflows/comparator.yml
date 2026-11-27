@@ -1,7 +1,7 @@
-name: Replay proof Comparator
+name: AdelicRepresentation theta scaling Comparator
 on:
   push:
-    branches: [verify/comparator-35148]
+    branches: [verify/comparator-35190]
 
 permissions:
   contents: read
@@ -50,7 +50,7 @@ jobs:
           test -x "$RUNNER_TEMP/lean/bin/nanoda_bin"
       - name: Check out the exact proof and apply the upstream repair
         run: |
-          candidate=78599320ad7e878bce293c6084fb0aab167b86e1
+          candidate=504c9f849dd6963ea1aff8a8a51a818dcc2a6957
           mkdir replay
           git -C replay init -q
           git -C replay remote add origin https://github.com/itsloganmann/alpoge-rh-replay.git
@@ -59,7 +59,7 @@ jobs:
           git -C replay checkout --detach FETCH_HEAD
           test "$(git -C replay rev-parse HEAD)" = "$candidate"
           git -C replay apply --index "$GITHUB_WORKSPACE/upstream-repair.patch"
-          test "$(git -C replay write-tree)" = 1012f1861f3800ab19de1c7c074e067e3eae9350
+          test "$(git -C replay write-tree)" = ad7aced9c45ae74e2e81fbf9068f1414c47eec10
           git -C replay diff --cached --exit-code -- grh/Challenge.lean grh/src/Statements.lean grh/comparator.json
           git -C replay diff --cached --stat
       - name: Restore the pinned dependency caches
