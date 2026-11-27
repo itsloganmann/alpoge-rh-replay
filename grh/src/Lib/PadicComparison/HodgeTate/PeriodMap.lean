@@ -312,9 +312,12 @@ lemma New.Variety.exists_hasHodgeTateWeight {p h : ℕ} {R : CommRingCat} {E k :
       rfl
     exact congrArg (algebraMap (PadicAlgCl p) ℂ_[p]) h_e
   -- By the valuative criterion, points over `c[1/p]` of a proper scheme extend uniquely to `c`.
+  let τ (Z' : Over (Spec R)) : freeAb.obj (testPoints.obj Z') ⟶
+      genericOver ⋙ restrictAlg E k ⋙ freeAb (algPointsOf E R Z') := by
+    apply freeAb.map (toGenericPoints k h_compat Z')
   let B {n : ℕ} (Z' : Over (Spec R)) [IsProper Z'.hom] :
       H (genericOver ⋙ restrictAlg E k ⋙ freeAb (algPointsOf E R Z')) genericCoeff n ≃ₗ[k] _ :=
-    .ofBijective (mapₗ ..)
+    .ofBijective (mapₗ k genericCoeff (τ Z') n)
       (IsCohomEquiv.of_bijective (p := toGenericPoints k h_compat Z')
         (fun c ↦ c.bijective_generic_points) n)
   -- `J` is `ℂ_[p]`-linear, hence semilinear along the section `ε` of `k → PadicAlgCl p`.
@@ -370,10 +373,6 @@ lemma New.Variety.exists_hasHodgeTateWeight {p h : ℕ} {R : CommRingCat} {E k :
     -- It remains that `B` commutes with the pull-back along `u`: `B` is `mapₗ` along the maps
     -- `toGenericPoints`, which are natural in the scheme.
     rw [(B W).symm_apply_eq.mpr]
-    -- `τ Z'` is that map, typed with the source of `B Z'`, so that unification does not unfold `B`
-    let τ (Z' : Over (Spec R)) : freeAb.obj (testPoints.obj Z') ⟶
-        genericOver ⋙ restrictAlg E k ⋙ freeAb (algPointsOf E R Z') := by
-      apply freeAb.map (toGenericPoints k h_compat Z')
     refine (map_comp _ (τ Y) ξ).symm.trans (.trans ?_ (map_comp (τ W) _ ξ))
     -- the two composite maps of points agree
     exact congrArg (H.map genericCoeff · (q + h) ξ) hom_ext
