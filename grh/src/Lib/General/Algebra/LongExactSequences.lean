@@ -379,13 +379,13 @@ lemma Comparison.pull_hom_covariant (hS : S.ShortExact) (hS' : S'.ShortExact) {�
     (τ : S.map (restrictAlong φ) ⟶ S') (α : N' ⟶ φ ⋙ N) :
     LongExactSeq.Hom (LongExactSeq.covariant hS N) (LongExactSeq.covariant hS' N')
       (pull ⟨φ, τ.τ₁⟩ α) (pull ⟨φ, τ.τ₂⟩ α) (pull ⟨φ, τ.τ₃⟩ α) := by
-  constructor
+  refine ⟨?_, ?_, ?_⟩
   · exact fun _ x ↦ pull_push ⟨φ, τ.τ₁⟩ τ.τ₂ S.f S'.f τ.comm₁₂.symm α x
   · exact fun _ x ↦ pull_push ⟨φ, τ.τ₂⟩ τ.τ₃ S.g S'.g τ.comm₂₃.symm α x
   · -- the extension class is natural
     intro n (x : H N S.X₃ n)
-    change pull (N := N) ⟨φ, τ.τ₁⟩ α (n + 1) (hS.extClass.postcomp N (by lia) x) =
-      hS'.extClass.postcomp N' (by lia) (pull ⟨φ, τ.τ₃⟩ α n x)
+    change pull (N := N) ⟨φ, τ.τ₁⟩ α (n + 1) (hS.extClass.postcomp N rfl x) =
+      hS'.extClass.postcomp N' rfl (pull ⟨φ, τ.τ₃⟩ α n x)
     simp [pull_apply, mapExactFunctor_comp, mapExactFunctor_extClass, comp_assoc (h₂₃ := rfl),
       ShortExact.extClass_naturality (h₂ := hS')]
 
