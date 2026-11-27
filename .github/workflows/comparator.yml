@@ -1,7 +1,7 @@
-name: Replay proof Comparator
+name: Étale cohomology map laws Comparator
 on:
   push:
-    branches: [verify/comparator-35148]
+    branches: [verify/comparator-35180]
 
 permissions:
   contents: read
@@ -50,7 +50,7 @@ jobs:
           test -x "$RUNNER_TEMP/lean/bin/nanoda_bin"
       - name: Check out the exact proof and apply the upstream repair
         run: |
-          candidate=78599320ad7e878bce293c6084fb0aab167b86e1
+          candidate=ed33dcd5a893d371ac4172f508ad9446cec8c471
           mkdir replay
           git -C replay init -q
           git -C replay remote add origin https://github.com/itsloganmann/alpoge-rh-replay.git
@@ -59,7 +59,7 @@ jobs:
           git -C replay checkout --detach FETCH_HEAD
           test "$(git -C replay rev-parse HEAD)" = "$candidate"
           git -C replay apply --index "$GITHUB_WORKSPACE/upstream-repair.patch"
-          test "$(git -C replay write-tree)" = 1012f1861f3800ab19de1c7c074e067e3eae9350
+          test "$(git -C replay write-tree)" = 256cb8e00140dd37048288cb527855db99e3679d
           git -C replay diff --cached --exit-code -- grh/Challenge.lean grh/src/Statements.lean grh/comparator.json
           git -C replay diff --cached --stat
       - name: Restore the pinned dependency caches
