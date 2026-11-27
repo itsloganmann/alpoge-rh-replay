@@ -1,7 +1,7 @@
 name: Replay proof Comparator
 on:
   push:
-    branches: [verify/comparator-35148]
+    branches: [verify/comparator-remaining]
 
 permissions:
   contents: read
@@ -10,11 +10,28 @@ jobs:
   comparator:
     if: github.repository == 'itsloganmann/alpoge-rh-replay'
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - pr: '35152'
+            commit: 3be44cb306fbd02e85147d5cedd97792a1db170c
+            tree: 438c9fb44cbc14228c3585e5dff55c3bc463b957
+          - pr: '35151'
+            commit: 04b1b8168b29b874e25f1605774c55137ea286c9
+            tree: 150f3596ae40a488e844eb309ec7cbf728f1e756
+          - pr: '35150'
+            commit: cfe8f1a03040fd011964567d38fe1ea4bb42935b
+            tree: c4ad6a0f67f2564e81783fe67b4e3565b8f7f3e1
     timeout-minutes: 180
     defaults:
       run:
         shell: bash
+    name: "Comparator for PR ${{ matrix.pr }}"
     env:
+      CANDIDATE_SHA: ${{ matrix.commit }}
+      CANDIDATE_TREE: ${{ matrix.tree }}
       LEAN_ABORT_ON_PANIC: '1'
       LEAN_NUM_THREADS: '3'
       LAKE_ARTIFACT_CACHE: 'false'
@@ -50,7 +67,7 @@ jobs:
           test -x "$RUNNER_TEMP/lean/bin/nanoda_bin"
       - name: Check out the exact proof and apply the upstream repair
         run: |
-          candidate=78599320ad7e878bce293c6084fb0aab167b86e1
+          candidate="$CANDIDATE_SHA"
           mkdir replay
           git -C replay init -q
           git -C replay remote add origin https://github.com/itsloganmann/alpoge-rh-replay.git
@@ -59,7 +76,7 @@ jobs:
           git -C replay checkout --detach FETCH_HEAD
           test "$(git -C replay rev-parse HEAD)" = "$candidate"
           git -C replay apply --index "$GITHUB_WORKSPACE/upstream-repair.patch"
-          test "$(git -C replay write-tree)" = 1012f1861f3800ab19de1c7c074e067e3eae9350
+          test "$(git -C replay write-tree)" = "$CANDIDATE_TREE"
           git -C replay diff --cached --exit-code -- grh/Challenge.lean grh/src/Statements.lean grh/comparator.json
           git -C replay diff --cached --stat
       - name: Restore the pinned dependency caches
